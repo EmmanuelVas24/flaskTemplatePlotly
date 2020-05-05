@@ -4,9 +4,12 @@ import csv
 from flask import Flask
 from flask import request,session, redirect, url_for, escape,send_from_directory,make_response, render_template
 
-import pymysql 
+import pymysql
 import json
 import operator
+
+#Python JSON serialize a Decimal object
+import simplejson as json
 
 app = Flask(__name__, static_url_path='')
 
@@ -37,13 +40,13 @@ def countStates():
                     statehist[k] += 1
                 else:
                     statehist[k] = 1
-            
+
         n+=1
     f.close()
     sorted_states = sorted(statehist.items(),key=operator.itemgetter(1),reverse=True)
     #print(sorted_states)
     #print(statehist)
-    #return json.dumps(statehist)   
+    #return json.dumps(statehist)
     s = ''
     for st in sorted_states:
         s += st[0] + ' ' + str(st[1]) + '<br>'
@@ -63,7 +66,7 @@ def countStatesPlot():
                 statehist[k] += 1
             else:
                 statehist[k] = 1
-            
+
         n+=1
     f.close()
     sorted_states = sorted(statehist.items(),key=operator.itemgetter(1),reverse=True)
@@ -76,7 +79,7 @@ def countStatesPlot():
         states.append(state)
     #print(counts,states)
     #print(statehist)
-    #return json.dumps(sorted_states)   
+    #return json.dumps(sorted_states)
     jsdata = {'states':states,'counts':counts}
     return render_template('statesPlot.html', title='State Plot', data=jsdata,plot='state')
 @app.route('/snowDepthPlot',methods = ['GET','POST'])
@@ -93,7 +96,7 @@ def snowDepthPlot():
         cur.execute(sql)
     jsx = []
     jsy = []
-    
+
     for row in cur:
         jsx.append(row['Date'])
         jsy.append(row['Depth'])
@@ -110,20 +113,60 @@ def snowDepthForm():
     years = []
     for row in cur:
         years.append(row['years'])
-        
+
     return render_template('snowForm.html', title='Filter data',years=years)
 
-@app.route('/csv')  
-def download_csv():  
-    csv = 'a,b,c\n1,2,3\n'  
+#HW code
+#DATA: NBA shot logs (daily) from October to January
+
+#This plot will display how the average shot distance varies on a day to day basis in the NBA
+#GROUP BY is done on the date column, since multiple shots happen on the same day
+#Drop Down: Months
+#Sorted By: Date
+
+@app.route('/shotLogsPlot',methods = ['GET','POST'])
+def shotLogsPlot():
+    conn = pymysql.connect(host='mysql.clarksonmsda.org', port=3306, user='ia626',
+                       passwd='ia626clarkson', db='ia626', autocommit=True) #setup our credentials
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    qmonth = request.args.get('month')
+    if qmonth is not None:
+        sql = 'SELECT `date`, AVG(`shot_distance`) as `shotdistance` FROM `vases_shotLogs` WHERE MONTH(`date`) = %s GROUP BY `date` ORDER BY `date`';
+        cur.execute(sql,(qmonth))
+    else:
+        sql = 'SELECT `date`, AVG(`shot_distance`) as `shotdistance` FROM `vases_shotLogs` GROUP BY `date` ORDER BY `date`';
+        cur.execute(sql)
+    jsx = []
+    jsy = []
+
+    for row in cur:
+        jsx.append(row['date'])
+        jsy.append(row['shotdistance'])
+    jsdata = {'x':jsx,'y':jsy}
+    return render_template('shotPlot.html', title='Shot Plot', data=jsdata,plot='shot')
+
+@app.route('/shotLogsForm')
+def shotLogsForm():
+    conn = pymysql.connect(host='mysql.clarksonmsda.org', port=3306, user='ia626',
+                       passwd='ia626clarkson', db='ia626', autocommit=True) #setup our credentials
+    cur = conn.cursor(pymysql.cursors.DictCursor)
+    sql = 'SELECT MONTH(`date`) AS `months` FROM `vases_shotLogs` GROUP BY MONTH(`date`) ORDER BY `date`;'
+    cur.execute(sql)
+    months = []
+    for row in cur:
+        months.append(row['months'])
+
+    return render_template('shotForm.html', title='Filter data',months=months)
+
+@app.route('/csv')
+def download_csv():
+    csv = 'a,b,c\n1,2,3\n'
     response = make_response(csv)
     cd = 'attachment; filename=mycsv.csv'
-    response.headers['Content-Disposition'] = cd 
+    response.headers['Content-Disposition'] = cd
     response.mimetype='text/csv'
 
     return response
 
-
-    
 if __name__ == "__main__":
     app.run(host='127.0.0.1',debug=True)

@@ -7,11 +7,11 @@
       {% endif %}
 	  <link rel="stylesheet" type="text/css" href="static/style.css">
 	  <script src="static/plotly-latest.min.js"></script>
-	  
-	  
+
+
     </head>
     <body>
-        
+
         {% block content %}{% endblock %}
     </body>
 	<script>
@@ -29,7 +29,7 @@
 
 			Plotly.newPlot('myDiv', data, layout);
 	 {% endif %}
-	 
+
 	 {% if plot == 'snow' %}
 			var trace1 = {
 			  x:  {{ data.x|tojson|safe }},
@@ -37,11 +37,26 @@
 			  type: 'scatter'
 			};
 		var data = [trace1];
-		
+
 			var layout = {
 			  height: 500,
 			  width: 800
 			};
+      Plotly.newPlot('myDiv', data, layout);
+	 {% endif %}
+
+   {% if plot == 'shot' %}
+   		var trace2 = {
+   			 x:  {{ data.x|tojson|safe }},
+   			 y:  {{ data.y|tojson|safe }},
+   			 type: 'scatter'
+   		};
+   	var data = [trace2];
+
+   		var layout = {
+   			 height: 500,
+   			 width: 800
+   		};
 
 			Plotly.newPlot('myDiv', data, layout);
 	 {% endif %}

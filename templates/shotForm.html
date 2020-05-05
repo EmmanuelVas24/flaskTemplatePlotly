@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+	<form action="shotLogsPlot" method="GET">
+		<select name="month">
+			{% for m in months %}
+				<option value="{{ m }}">Show month: {{ m }}</option>
+			{% endfor %}
+		</select>
+		<input type="submit" value="Show plot"/>
+	</form>
+
+{% endblock %}
